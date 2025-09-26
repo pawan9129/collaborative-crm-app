@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:15
+    container_name: crm-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: crmdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d crmdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend-dev
+    container_name: crm-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:12345@db:5432/crmdb
+      JWT_SECRET: pawan_secret_key
+    ports:
+      - "8950:5000"
+
+  frontend:
+    build: ./frontend-dev
+    container_name: crm-frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:

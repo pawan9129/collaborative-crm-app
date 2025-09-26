@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  name         String
+  email        String     @unique
+  password     String
+  role         Role       @default(SALES_REP)
+  refreshToken String?
+  activities   Activity[]
+  leads        Lead[]     @relation("AssignedTo")
+  createdLeads Lead[]     @relation("CreatedBy")
+}
+
+model Lead {
+  id         Int        @id @default(autoincrement())
+  name       String
+  email      String
+  phone      String?    // add this line
+  status     LeadStatus @default(NEW)
+  assignedTo Int?
+  createdBy  Int
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  activities Activity[]
+  assigned   User?      @relation("AssignedTo", fields: [assignedTo], references: [id])
+  creator    User       @relation("CreatedBy", fields: [createdBy], references: [id])
+}
+
+model Activity {
+  id        Int          @id @default(autoincrement())
+  leadId    Int
+  type      ActivityType
+  content   String
+  userId    Int
+  timestamp DateTime     @default(now())
+  lead      Lead         @relation(fields: [leadId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  SALES_REP
+}
+
+enum LeadStatus {
+  NEW
+  ASSIGNED
+  CLOSED
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+}
